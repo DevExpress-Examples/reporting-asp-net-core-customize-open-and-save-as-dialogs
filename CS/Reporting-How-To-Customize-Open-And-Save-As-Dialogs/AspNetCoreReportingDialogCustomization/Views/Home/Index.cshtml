@@ -1,0 +1,216 @@
+<link rel="stylesheet" href="~/css/viewer.part.bundle.css" />
+<link rel="stylesheet" href="~/css/designer.part.bundle.css" />
+
+<script src="~/js/viewer.part.bundle.js"></script>
+<script src="~/js/designer.part.bundle.js"></script>
+
+<style>
+    .dxrd-reportdialog-content .dx-list-collapsible-groups .dx-list-group:first-child .dx-list-group-header {
+        display: none;
+    }
+
+    .dxrd-reportdialog-content .dx-list-collapsible-groups .dx-list-item {
+        border-top: 0;
+    }
+
+    .dx-designer .dx-popup-bottom.dx-toolbar .dx-toolbar-items-container {
+        margin-left: 6px;
+    }
+</style>
+
+<script type="text/javascript" id="script">
+    function addReport(url, category, categoryArray, categoryName, reportName, value, koCategory) {
+        if(category.length === 0) {
+            categoryArray.push({
+                key: categoryName, items: [
+                    { text: value.Key, displayName: reportName, onClick: function() { url(value.Key); koCategory && koCategory(categoryName); } }
+                ]
+            });
+        } else {
+            category[0].items.push({ text: value.Key, displayName: reportName, onClick: function() { url(value.Key); koCategory && koCategory(categoryName); } });
+        }
+    }
+
+    function updateCategories(url, categories, koCategory) {
+        DevExpress.Reporting.Designer.ReportStorageWeb.getUrls().done(function(result) {
+            var categoryArray = [{ key: "none", items: [] }];
+            for(var i = 0; i < result.length; i++) {
+                var parts = result[i].Value.split('\\');
+                var folder = parts[0];
+                var reportName = parts[1];
+                if(parts.length === 1) {
+                    reportName = parts[0];
+                    folder = "none";
+                } else if (parts.length > 2) {
+                    reportName = parts.pop();
+                    folder = parts.join('\\');
+                }
+                var category = categoryArray.filter(function(item) { return item.key === folder; });
+                addReport(url, category, categoryArray, folder, reportName, result[i], koCategory);
+            }
+            categories(categoryArray);
+        });
+    }
+
+    function customizeSaveAsDialog(s, e) {
+        e.Popup.width("700px");
+        e.Popup.height("522px");
+        e.Popup.title = "Save";
+        var categories = ko.observableArray([]);
+        var koUrl = ko.observable("");
+        var koInput = ko.observable("");
+        koUrl.subscribe(function(newVal) {
+            newVal = newVal.replace('/', '\\');
+            var paths = newVal.split('\\');
+            var fileName = paths.pop();
+            if(fileName !== koInput())
+                koInput(fileName);
+            var catName = paths.join('\\');
+            if(catName !== koCategory())
+                koCategory(catName);
+        });
+        var koCategory = ko.observable("");
+        updateCategories(koUrl, categories);
+
+        var model = {
+            categories: categories,
+            categoryName: koCategory,
+            reportUrl: koUrl,
+            inputValue: koInput,
+            setUrl: function(url) {
+                koUrl(url);
+            },
+            getUrl: function() {
+                return koUrl();
+            },
+            onShow: function(tab) {
+                updateCategories(koUrl, categories, koCategory);
+            },
+            popupButtons: [
+                {
+                    toolbar: 'bottom', location: 'after', widget: 'button', options: {
+                        text: 'Save', onClick: function() {
+                            e.Popup.save(koUrl());
+                        }
+                    }
+                },
+                {
+                    toolbar: 'bottom', location: 'after', widget: 'button', options: {
+                        text: 'Cancel', onClick: function() {
+                            e.Popup.cancel();
+                        }
+                    }
+                }
+            ]
+        }
+        e.Customize("save-as", model)
+    }
+
+    function customizeOpenDialog(s, e) {
+        e.Popup.width("700px");
+        e.Popup.height("476px");
+        e.Popup.title = "Open";
+        var categories = ko.observableArray([]);
+        var koUrl = ko.observable("");
+        var koInput = ko.observable("");
+        updateCategories(koUrl, categories);
+
+        var model = {
+            categories: categories,
+            reportUrl: koUrl,
+            inputValue: koInput,
+            setUrl: function(url) {
+                koUrl(url);
+            },
+            getUrl: function() {
+                return koUrl();
+            },
+            onShow: function(tab) {
+                updateCategories(koUrl, categories);
+            },
+            popupButtons: [
+                {
+                    toolbar: 'bottom', location: 'after', widget: 'button', options: {
+                        text: 'Open', onClick: function() {
+                            e.Popup.open(koUrl());
+                        }
+                    }
+                },
+                {
+                    toolbar: 'bottom', location: 'after', widget: 'button', options: {
+                        text: 'Cancel', onClick: function() {
+                            e.Popup.cancel();
+                        }
+                    }
+                }
+            ]
+        }
+        e.Customize("open", model)
+    }
+</script>
+<style>
+    .dxrd-reportdialog-content .reportdialog-item.dx-texteditor:not(.dx-multiline):not(.dx-textarea) {
+        height: 36px;
+        margin-bottom: 10px;
+    }
+</style>
+<script type="text/html" id="save-as">
+    <div class="dxrd-reportdialog-content">
+        <div style="margin-bottom: 10px;" data-bind="dxTextBox: { height: 36, value: inputValue, valueChangeEvent: 'keyup', onValueChanged: function (e) { reportUrl(categoryName() ? (categoryName() + '\\' + e.value) : e.value);}, placeholder: 'Enter a report name to save...', showClearButton: true }"></div>
+        <div style="margin-bottom: 10px;" data-bind="dxSelectBox: {
+                                    height: 36,
+                                    dataSource: categories,
+                                    value: categoryName,
+                                    keyExpr: 'key',
+                                    valueExpr: 'key',
+                                    displayExpr: 'key',
+                                    acceptCustomValue: true,
+                                    placeholder: 'Select a category...',
+                                    onCustomItemCreating: function(data) {
+                                        if(!data.text) {
+                                            data.customItem = null;
+                                            return;
+                                        }
+                                        categories.push({key: data.text, items: [] })
+                                        reportUrl(data.text + '\\' + inputValue());
+                                        data.customItem = {
+                                            key: data.text,
+                                            items: []
+                                        };
+                                    }
+                                }"></div>
+        <div class="dx-default-border-style dxd-border-secondary" data-bind="dxList: {
+                    dataSource: categories,
+                    height: '260px',
+                    grouped: true,
+                    displayExpr: 'displayName',
+                    keyExpr: 'text',
+                    collapsibleGroups: true,
+                }"></div>
+    </div>
+</script>
+
+<script type="text/html" id="open">
+    <div class="dxrd-reportdialog-content">
+        <div style="margin-bottom: 10px;" data-bind="dxTextBox: { height: 36, value: inputValue, valueChangeEvent: 'keyup', placeholder: 'Enter text to search...', showClearButton: true }"></div>
+        <div class="dx-default-border-style dxd-border-secondary" data-bind="dxList: {
+                    dataSource: categories,
+                    height: '260px',
+                    grouped: true,
+                    searchExpr: 'text',
+                    searchValue: inputValue,
+                    displayExpr: 'displayName',
+                    keyExpr: 'text',
+                    collapsibleGroups: true,
+                }"></div>
+    </div>
+</script>
+
+
+@(Html.DevExpress().ReportDesigner("reportDesigner")
+    .Height("1000px")
+         .Bind(@"Category1\Report1")
+         .ClientSideEvents(configure => {
+             configure.CustomizeSaveAsDialog("customizeSaveAsDialog");
+             configure.CustomizeOpenDialog("customizeOpenDialog");
+         }));
