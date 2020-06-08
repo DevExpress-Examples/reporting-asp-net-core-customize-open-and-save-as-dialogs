@@ -10,7 +10,7 @@ This example demonstrates how to use the End-User Report Designer client-side AP
 
 Report files in this example are arranged in folders in the root **Reports** folder. Folder names correspond to the report's _Category_.  The customized dialog displays report names and categories and allows the user to do the following: 
 
-![Custom Save As Dialog](images/save-as-dialog.png)
+![Custom Save As Dialog](Images/save-as-dialog.png)
 
 
 * select the existing category and file name, and save the report  
@@ -52,7 +52,7 @@ The [ReportDesignerClientSideEventsBuilder.CustomizeSaveAsDialog](https://docs.d
 
 The custom Open dialog allows the user to find a report in a list grouped by category, select the report, and open it. The user can type in the text box to filter the list and find report and category names that contain the input string.
 
-![Custom Open Dialog](images/open-dialog.png)
+![Custom Open Dialog](Images/open-dialog.png)
 
 The Open dialog is customized in the same way as the Save As dialog. The [ReportDesignerClientSideEventsBuilder.CustomizeOpenDialog](https://docs.devexpress.com/XtraReports/DevExpress.AspNetCore.Reporting.ReportDesigner.ReportDesignerClientSideEventsBuilder.CustomizeOpenDialog(System.String)) method specifies the name of the JavaScript function that handles the [CustomizeOpenDialog](https://docs.devexpress.com/XtraReports/js-ASPxClientReportDesigner?p=netframework#js_aspxclientreportdesigner_customizeopendialog) event - the _customizeOpenDialog_ function in this example.  
 
