@@ -18,36 +18,22 @@
     }
 </style>
 
-<script type="text/javascript" id="script">
-    function addReport(url, category, categoryArray, categoryName, reportName, value, koCategory) {
-        if(category.length === 0) {
-            categoryArray.push({
-                key: categoryName, items: [
-                    { text: value.Key, displayName: reportName, onClick: function() { url(value.Key); koCategory && koCategory(categoryName); } }
-                ]
-            });
-        } else {
-            category[0].items.push({ text: value.Key, displayName: reportName, onClick: function() { url(value.Key); koCategory && koCategory(categoryName); } });
-        }
-    }
-
+<script>
     function updateCategories(url, categories, koCategory) {
         DevExpress.Reporting.Designer.ReportStorageWeb.getUrls().done(function(result) {
-            var categoryArray = [{ key: "none", items: [] }];
-            for(var i = 0; i < result.length; i++) {
-                var parts = result[i].Value.split('\\');
-                var folder = parts[0];
-                var reportName = parts[1];
-                if(parts.length === 1) {
-                    reportName = parts[0];
-                    folder = "none";
-                } else if (parts.length > 2) {
-                    reportName = parts.pop();
-                    folder = parts.join('\\');
+            var categoryArray = [{ key: "", items: [] }];
+            (result || []).forEach(function(reportItem) {
+                var parts = reportItem.Value.split('\\');
+                var reportName = parts.pop();
+                var categoryName = parts.length > 0 ? parts.join('\\') : "";
+
+                var category = categoryArray.filter(function(item) { return item.key === categoryName; })[0];
+                if(!category) {
+                    category = { key: categoryName, items: [] };
+                    categoryArray.push(category);
                 }
-                var category = categoryArray.filter(function(item) { return item.key === folder; });
-                addReport(url, category, categoryArray, folder, reportName, result[i], koCategory);
-            }
+                category.items.push({ text: reportItem.Key, displayName: reportName, onClick: function() { url(reportItem.Key); koCategory && koCategory(categoryName); } });
+            })
             categories(categoryArray);
         });
     }
@@ -59,24 +45,48 @@
         var categories = ko.observableArray([]);
         var koUrl = ko.observable("");
         var koInput = ko.observable("");
+        var koCategory = ko.observable("");
+
         koUrl.subscribe(function(newVal) {
             newVal = newVal.replace('/', '\\');
             var paths = newVal.split('\\');
             var fileName = paths.pop();
-            if(fileName !== koInput())
-                koInput(fileName);
+            koInput(fileName);
             var catName = paths.join('\\');
-            if(catName !== koCategory())
-                koCategory(catName);
+            koCategory(catName);
         });
-        var koCategory = ko.observable("");
+        var updateReportName = function(reportName) {
+            koUrl(koCategory() ? (koCategory() + '\\' + reportName) : reportName);
+        };
+
+        koCategory.subscribe(function(newVal) {
+            newVal = newVal.replace('/', '\\');
+            updateReportName(koInput());
+        });
         updateCategories(koUrl, categories);
+
+        var onCustomCategoryCreating = function(data) {
+            if(!data.text || data.text === "none") {
+                data.customItem = null;
+                return;
+            }
+            data.customItem = { key: data.text, items: [] };
+            categories.push(data.customItem);
+            koUrl(data.text + '\\' + koInput());
+        }
 
         var model = {
             categories: categories,
             categoryName: koCategory,
             reportUrl: koUrl,
+            onReportNameChanged: function(e) {
+                updateReportName(e.value);
+            },
+            onCustomCategoryCreating: onCustomCategoryCreating,
             inputValue: koInput,
+            categoryDisplayExpr: function(item) {
+                return item && item.key || "none";
+            },
             setUrl: function(url) {
                 koUrl(url);
             },
@@ -84,18 +94,20 @@
                 return koUrl();
             },
             onShow: function(tab) {
+                koInput("");
                 updateCategories(koUrl, categories, koCategory);
             },
             popupButtons: [
                 {
-                    toolbar: 'bottom', location: 'after', widget: 'button', options: {
+                    toolbar: 'bottom', location: 'after', widget: 'dxButton', options: {
                         text: 'Save', onClick: function() {
+                            if(!koInput()) return;
                             e.Popup.save(koUrl());
                         }
                     }
                 },
                 {
-                    toolbar: 'bottom', location: 'after', widget: 'button', options: {
+                    toolbar: 'bottom', location: 'after', widget: 'dxButton', options: {
                         text: 'Cancel', onClick: function() {
                             e.Popup.cancel();
                         }
@@ -103,7 +115,7 @@
                 }
             ]
         }
-        e.Customize("save-as", model)
+        e.Customize("custom-save-as-dialog", model);
     }
 
     function customizeOpenDialog(s, e) {
@@ -126,18 +138,19 @@
                 return koUrl();
             },
             onShow: function(tab) {
+                koInput("");
                 updateCategories(koUrl, categories);
             },
             popupButtons: [
                 {
-                    toolbar: 'bottom', location: 'after', widget: 'button', options: {
+                    toolbar: 'bottom', location: 'after', widget: 'dxButton', options: {
                         text: 'Open', onClick: function() {
                             e.Popup.open(koUrl());
                         }
                     }
                 },
                 {
-                    toolbar: 'bottom', location: 'after', widget: 'button', options: {
+                    toolbar: 'bottom', location: 'after', widget: 'dxButton', options: {
                         text: 'Cancel', onClick: function() {
                             e.Popup.cancel();
                         }
@@ -145,7 +158,7 @@
                 }
             ]
         }
-        e.Customize("open", model)
+        e.Customize("custom-open-dialog", model)
     }
 </script>
 <style>
@@ -154,61 +167,60 @@
         margin-bottom: 10px;
     }
 </style>
-<script type="text/html" id="save-as">
+<script type="text/html" id="custom-save-as-dialog">
     <div class="dxrd-reportdialog-content">
-        <div style="margin-bottom: 10px;" data-bind="dxTextBox: { height: 36, value: inputValue, valueChangeEvent: 'keyup', onValueChanged: function (e) { reportUrl(categoryName() ? (categoryName() + '\\' + e.value) : e.value);}, placeholder: 'Enter a report name to save...', showClearButton: true }"></div>
-        <div style="margin-bottom: 10px;" data-bind="dxSelectBox: {
-                                    height: 36,
-                                    dataSource: categories,
-                                    value: categoryName,
-                                    keyExpr: 'key',
-                                    valueExpr: 'key',
-                                    displayExpr: 'key',
-                                    acceptCustomValue: true,
-                                    placeholder: 'Select a category...',
-                                    onCustomItemCreating: function(data) {
-                                        if(!data.text) {
-                                            data.customItem = null;
-                                            return;
-                                        }
-                                        categories.push({key: data.text, items: [] })
-                                        reportUrl(data.text + '\\' + inputValue());
-                                        data.customItem = {
-                                            key: data.text,
-                                            items: []
-                                        };
-                                    }
-                                }"></div>
-        <div class="dx-default-border-style dxd-border-secondary" data-bind="dxList: {
-                    dataSource: categories,
-                    height: '260px',
-                    grouped: true,
-                    displayExpr: 'displayName',
-                    keyExpr: 'text',
-                    collapsibleGroups: true,
-                }"></div>
+        <div style="margin-bottom: 10px;"
+             data-bind="dxTextBox: {
+                 height: 36,
+                 value: inputValue,
+                 valueChangeEvent: 'keyup',
+                 onValueChanged: onReportNameChanged,
+                 placeholder: 'Enter a report name to save...',
+                 showClearButton: true
+        }"></div>
+        <div style="margin-bottom: 10px;"
+             data-bind="dxSelectBox: {
+                height: 36,
+                dataSource: categories,
+                value: categoryName,
+                valueExpr: 'key',
+                displayExpr: categoryDisplayExpr,
+                acceptCustomValue: true,
+                placeholder: 'Select a category...',
+                onCustomItemCreating: onCustomCategoryCreating
+        }"></div>
+        <div class="dx-default-border-style dxd-border-secondary"
+             data-bind="dxList: {
+                dataSource: categories,
+                height: '260px',
+                grouped: true,
+                displayExpr: 'displayName',
+                keyExpr: 'text',
+                collapsibleGroups: true,
+        }"></div>
     </div>
 </script>
 
-<script type="text/html" id="open">
+<script type="text/html" id="custom-open-dialog">
     <div class="dxrd-reportdialog-content">
         <div style="margin-bottom: 10px;" data-bind="dxTextBox: { height: 36, value: inputValue, valueChangeEvent: 'keyup', placeholder: 'Enter text to search...', showClearButton: true }"></div>
-        <div class="dx-default-border-style dxd-border-secondary" data-bind="dxList: {
-                    dataSource: categories,
-                    height: '260px',
-                    grouped: true,
-                    searchExpr: 'text',
-                    searchValue: inputValue,
-                    displayExpr: 'displayName',
-                    keyExpr: 'text',
-                    collapsibleGroups: true,
-                }"></div>
+        <div class="dx-default-border-style dxd-border-secondary"
+             data-bind="dxList: {
+                dataSource: categories,
+                height: '260px',
+                grouped: true,
+                searchExpr: 'text',
+                searchValue: inputValue,
+                displayExpr: 'displayName',
+                keyExpr: 'text',
+                collapsibleGroups: true,
+        }"></div>
     </div>
 </script>
 
 
 @(Html.DevExpress().ReportDesigner("reportDesigner")
-    .Height("1000px")
+         .Height("1000px")
          .Bind(@"Category1\Report1")
          .ClientSideEvents(configure => {
              configure.CustomizeSaveAsDialog("customizeSaveAsDialog");
