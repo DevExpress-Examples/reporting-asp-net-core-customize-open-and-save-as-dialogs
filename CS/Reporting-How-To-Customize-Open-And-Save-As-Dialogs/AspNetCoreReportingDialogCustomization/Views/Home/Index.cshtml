@@ -187,7 +187,8 @@
                 displayExpr: categoryDisplayExpr,
                 acceptCustomValue: true,
                 placeholder: 'Select a category...',
-                onCustomItemCreating: onCustomCategoryCreating
+                onCustomItemCreating: onCustomCategoryCreating,
+                dropDownOptions: { container: $root.getPopupContainer($element) }
         }"></div>
         <div class="dx-default-border-style dxd-border-secondary"
              data-bind="dxList: {
