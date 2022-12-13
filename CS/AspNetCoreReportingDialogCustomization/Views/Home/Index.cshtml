@@ -1,0 +1,228 @@
+<link rel="stylesheet" href="~/css/viewer.part.bundle.css" />
+<link rel="stylesheet" href="~/css/designer.part.bundle.css" />
+
+<script src="~/js/viewer.part.bundle.js"></script>
+<script src="~/js/designer.part.bundle.js"></script>
+
+<style>
+    .dxrd-reportdialog-content .dx-list-collapsible-groups .dx-list-group:first-child .dx-list-group-header {
+        display: none;
+    }
+
+    .dxrd-reportdialog-content .dx-list-collapsible-groups .dx-list-item {
+        border-top: 0;
+    }
+
+    .dx-designer .dx-popup-bottom.dx-toolbar .dx-toolbar-items-container {
+        margin-left: 6px;
+    }
+</style>
+
+<script>
+    function updateCategories(url, categories, koCategory) {
+        DevExpress.Reporting.Designer.ReportStorageWeb.getUrls().done(function(result) {
+            var categoryArray = [{ key: "", items: [] }];
+            (result || []).forEach(function(reportItem) {
+                var parts = reportItem.Value.split('\\');
+                var reportName = parts.pop();
+                var categoryName = parts.length > 0 ? parts.join('\\') : "";
+
+                var category = categoryArray.filter(function(item) { return item.key === categoryName; })[0];
+                if(!category) {
+                    category = { key: categoryName, items: [] };
+                    categoryArray.push(category);
+                }
+                category.items.push({ text: reportItem.Key, displayName: reportName, onClick: function() { url(reportItem.Key); koCategory && koCategory(categoryName); } });
+            })
+            categories(categoryArray);
+        });
+    }
+
+    function customizeSaveAsDialog(s, e) {
+        e.Popup.width("700px");
+        e.Popup.height("522px");
+        e.Popup.title = "Save";
+        var categories = ko.observableArray([]);
+        var koUrl = ko.observable("");
+        var koInput = ko.observable("");
+        var koCategory = ko.observable("");
+
+        koUrl.subscribe(function(newVal) {
+            newVal = newVal.replace('/', '\\');
+            var paths = newVal.split('\\');
+            var fileName = paths.pop();
+            koInput(fileName);
+            var catName = paths.join('\\');
+            koCategory(catName);
+        });
+        var updateReportName = function(reportName) {
+            koUrl(koCategory() ? (koCategory() + '\\' + reportName) : reportName);
+        };
+
+        koCategory.subscribe(function(newVal) {
+            newVal = newVal.replace('/', '\\');
+            updateReportName(koInput());
+        });
+        updateCategories(koUrl, categories);
+
+        var onCustomCategoryCreating = function(data) {
+            if(!data.text || data.text === "none") {
+                data.customItem = null;
+                return;
+            }
+            data.customItem = { key: data.text, items: [] };
+            categories.push(data.customItem);
+            koUrl(data.text + '\\' + koInput());
+        }
+
+        var model = {
+            categories: categories,
+            categoryName: koCategory,
+            reportUrl: koUrl,
+            onReportNameChanged: function(e) {
+                updateReportName(e.value);
+            },
+            onCustomCategoryCreating: onCustomCategoryCreating,
+            inputValue: koInput,
+            categoryDisplayExpr: function(item) {
+                return item && item.key || "none";
+            },
+            setUrl: function(url) {
+                koUrl(url);
+            },
+            getUrl: function() {
+                return koUrl();
+            },
+            onShow: function(tab) {
+                koInput("");
+                updateCategories(koUrl, categories, koCategory);
+            },
+            popupButtons: [
+                {
+                    toolbar: 'bottom', location: 'after', widget: 'dxButton', options: {
+                        text: 'Save', onClick: function() {
+                            if(!koInput()) return;
+                            e.Popup.save(koUrl());
+                        }
+                    }
+                },
+                {
+                    toolbar: 'bottom', location: 'after', widget: 'dxButton', options: {
+                        text: 'Cancel', onClick: function() {
+                            e.Popup.cancel();
+                        }
+                    }
+                }
+            ]
+        }
+        e.Customize("custom-save-as-dialog", model);
+    }
+
+    function customizeOpenDialog(s, e) {
+        e.Popup.width("700px");
+        e.Popup.height("476px");
+        e.Popup.title = "Open";
+        var categories = ko.observableArray([]);
+        var koUrl = ko.observable("");
+        var koInput = ko.observable("");
+        updateCategories(koUrl, categories);
+
+        var model = {
+            categories: categories,
+            reportUrl: koUrl,
+            inputValue: koInput,
+            setUrl: function(url) {
+                koUrl(url);
+            },
+            getUrl: function() {
+                return koUrl();
+            },
+            onShow: function(tab) {
+                koInput("");
+                updateCategories(koUrl, categories);
+            },
+            popupButtons: [
+                {
+                    toolbar: 'bottom', location: 'after', widget: 'dxButton', options: {
+                        text: 'Open', onClick: function() {
+                            e.Popup.open(koUrl());
+                        }
+                    }
+                },
+                {
+                    toolbar: 'bottom', location: 'after', widget: 'dxButton', options: {
+                        text: 'Cancel', onClick: function() {
+                            e.Popup.cancel();
+                        }
+                    }
+                }
+            ]
+        }
+        e.Customize("custom-open-dialog", model)
+    }
+</script>
+<style>
+    .dxrd-reportdialog-content .reportdialog-item.dx-texteditor:not(.dx-multiline):not(.dx-textarea) {
+        height: 36px;
+        margin-bottom: 10px;
+    }
+</style>
+<script type="text/html" id="custom-save-as-dialog">
+    <div class="dxrd-reportdialog-content">
+        <div style="margin-bottom: 10px;"
+             data-bind="dxTextBox: {
+                 height: 36,
+                 value: inputValue,
+                 valueChangeEvent: 'keyup',
+                 onValueChanged: onReportNameChanged,
+                 placeholder: 'Enter a report name to save...',
+                 showClearButton: true
+        }"></div>
+        <div style="margin-bottom: 10px;"
+             data-bind="dxSelectBox: {
+                height: 36,
+                dataSource: categories,
+                value: categoryName,
+                valueExpr: 'key',
+                displayExpr: categoryDisplayExpr,
+                acceptCustomValue: true,
+                placeholder: 'Select a category...',
+                onCustomItemCreating: onCustomCategoryCreating
+        }"></div>
+        <div class="dx-default-border-style dxd-border-secondary"
+             data-bind="dxList: {
+                dataSource: categories,
+                height: '260px',
+                grouped: true,
+                displayExpr: 'displayName',
+                keyExpr: 'text',
+                collapsibleGroups: true,
+        }"></div>
+    </div>
+</script>
+
+<script type="text/html" id="custom-open-dialog">
+    <div class="dxrd-reportdialog-content">
+        <div style="margin-bottom: 10px;" data-bind="dxTextBox: { height: 36, value: inputValue, valueChangeEvent: 'keyup', placeholder: 'Enter text to search...', showClearButton: true }"></div>
+        <div class="dx-default-border-style dxd-border-secondary"
+             data-bind="dxList: {
+                dataSource: categories,
+                height: '260px',
+                grouped: true,
+                searchExpr: 'text',
+                searchValue: inputValue,
+                displayExpr: 'displayName',
+                keyExpr: 'text',
+                collapsibleGroups: true,
+        }"></div>
+    </div>
+</script>
+
+
+@(Html.DevExpress().ReportDesigner("reportDesigner")
+         .Height("1000px")
+         .Bind(@"Category1\Report1")
+         .ClientSideEvents(configure => {
+             configure.CustomizeSaveAsDialog("customizeSaveAsDialog");
+             configure.CustomizeOpenDialog("customizeOpenDialog");
+         }));
