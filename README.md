@@ -1,8 +1,3 @@
-<!-- default badges list -->
-![](https://img.shields.io/endpoint?url=https://codecentral.devexpress.com/api/v1/VersionRange/270777957/2022.2)
-[![](https://img.shields.io/badge/Open_in_DevExpress_Support_Center-FF7200?style=flat-square&logo=DevExpress&logoColor=white)](https://supportcenter.devexpress.com/ticket/details/T897601)
-[![](https://img.shields.io/badge/📖_How_to_use_DevExpress_Examples-e9f6fc?style=flat-square)](https://docs.devexpress.com/GeneralInformation/403183)
-<!-- default badges end -->
 # How to Customize the Save As and Open Dialogs in the Web End-User Report Designer    
 
 This example demonstrates how to use the End-User Report Designer client-side API to customize the **Save As** and **Open** dialogs. 
@@ -63,4 +58,22 @@ The Open dialog is customized in the same way as the Save As dialog. The [Report
 
 The Open **dialog template** and the **dialog model** are defined and passed to the e.Customize method to modify the dialog.  
 
+
+## Files to Review
+
+- [Index.cshtml](AspNetCoreReportingDialogCustomization/Views/Home/Index.cshtml)
+- [CustomReportStorageWebExtension.cs](AspNetCoreReportingDialogCustomization/Services/CustomReportStorageWebExtension.cs)
+- [ReportsFactory.cs](AspNetCoreReportingDialogCustomization/PredefinedReports/ReportsFactory.cs)
+- [Startup.cs](AspNetCoreReportingDialogCustomization/Startup.cs)
+
+## Documentation
+
+- [End-User Report Designer Customization (ASP.NET Core)](https://docs.devexpress.com/XtraReports/400278/web-reporting/asp-net-core-reporting/end-user-report-designer-in-asp-net-applications/customize-the-report-designer)
+- [Use Custom HTML Templates](https://docs.devexpress.com/XtraReports/403960/web-reporting/general-information-on-web-reporting/use-custom-html-templates)
+
+## More Examples
+
+- [ASP.NET Core Reporting - Best Practices](https://github.com/DevExpress-Examples/AspNetCore.Reporting.BestPractices)
+- [Custom Report Parameter Types in Web Reporting Controls (ASP.NET Core)](https://github.com/DevExpress-Examples/Reporting-Custom-Parameter-Editor-AspNet-Core)
+- [Web Reporting (ASP.NET MVC, ASP.NET Core and Angular) - How to Customize the DevExpress Report Wizard Customization and Hide Data Source Actions within our Report Designer](https://github.com/DevExpress-Examples/reporting-web-wizard-customization-service)
  
