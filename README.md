@@ -1,8 +1,3 @@
-<!-- default badges list -->
-![](https://img.shields.io/endpoint?url=https://codecentral.devexpress.com/api/v1/VersionRange/270777957/2022.2)
-[![](https://img.shields.io/badge/Open_in_DevExpress_Support_Center-FF7200?style=flat-square&logo=DevExpress&logoColor=white)](https://supportcenter.devexpress.com/ticket/details/T897601)
-[![](https://img.shields.io/badge/📖_How_to_use_DevExpress_Examples-e9f6fc?style=flat-square)](https://docs.devexpress.com/GeneralInformation/403183)
-<!-- default badges end -->
 # How to Customize the Save As and Open Dialogs in the Web End-User Report Designer    
 
 This example demonstrates how to use the End-User Report Designer client-side API to customize the **Save As** and **Open** dialogs. 
@@ -15,7 +10,7 @@ This example demonstrates how to use the End-User Report Designer client-side AP
 
 Report files in this example are arranged in folders in the root **Reports** folder. Folder names correspond to the report's _Category_.  The customized dialog displays report names and categories and allows the user to do the following: 
 
-![Custom Save As Dialog](Images/save-as-dialog.png)
+![Custom Save As Dialog](images/save-as-dialog.png)
 
 
 * select the existing category and file name, and save the report  
@@ -57,7 +52,7 @@ The [ReportDesignerClientSideEventsBuilder.CustomizeSaveAsDialog](https://docs.d
 
 The custom Open dialog allows the user to find a report in a list grouped by category, select the report, and open it. The user can type in the text box to filter the list and find report and category names that contain the input string.
 
-![Custom Open Dialog](Images/open-dialog.png)
+![Custom Open Dialog](images/open-dialog.png)
 
 The Open dialog is customized in the same way as the Save As dialog. The [ReportDesignerClientSideEventsBuilder.CustomizeOpenDialog](https://docs.devexpress.com/XtraReports/DevExpress.AspNetCore.Reporting.ReportDesigner.ReportDesignerClientSideEventsBuilder.CustomizeOpenDialog(System.String)) method specifies the name of the JavaScript function that handles the [CustomizeOpenDialog](https://docs.devexpress.com/XtraReports/js-ASPxClientReportDesigner?p=netframework#js_aspxclientreportdesigner_customizeopendialog) event - the _customizeOpenDialog_ function in this example.  
 
