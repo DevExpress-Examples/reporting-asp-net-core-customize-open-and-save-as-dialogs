@@ -26,8 +26,9 @@ namespace AspNetCoreReportingDialogCustomization {
             services.AddDevExpressControls();
             services.AddScoped<ReportStorageWebExtension, CustomReportStorageWebExtension>();
             services
-                .AddControllersWithViews()
-                .AddNewtonsoftJson();
+                .AddMvc()
+                .AddNewtonsoftJson()
+                .SetCompatibilityVersion(Microsoft.AspNetCore.Mvc.CompatibilityVersion.Version_3_0);
             services.ConfigureReportingServices(configurator => {
                 configurator.ConfigureReportDesigner(designerConfigurator => {
                     designerConfigurator.RegisterDataSourceWizardConfigFileConnectionStringsProvider();
