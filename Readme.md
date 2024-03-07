@@ -4,7 +4,8 @@
 <!-- default badges end -->
 # Reporting for ASP.NET COre - How to Customize the Save As and Open Dialogs in the Web End-User Report Designer    
 
-This example shows how to use the End-User Report Designer client-side API to customize the **Save As** and **Open** dialogs. 
+This example shows how to use the End-User Report Designer's client-side API to customize the **Save As** and **Open** dialogs. 
+
 
 * To customize the **Save As** dialog, handle the [`CustomizeSaveAsDialog`](https://docs.devexpress.com/XtraReports/js-ASPxClientReportDesigner?p=netframework#js_aspxclientreportdesigner_customizesaveasdialog) event and call the [`e.Customize`](https://docs.devexpress.com/XtraReports/js-ASPxClientReportDesignerCustomizeSaveAsDialogEventArgs#js_aspxclientreportdesignercustomizesaveasdialogeventargs_customize_template_model_) method.
 
@@ -12,7 +13,8 @@ This example shows how to use the End-User Report Designer client-side API to cu
 
 ## Customize the Save As Dialog    
 
-Report files in this example are loac in folders in the root **Reports** folder. Folder names correspond to the report's category. The customized dialog displays report names and categories. The dialog allows users to do the following: 
+Report files in this example are in folders in the root **Reports** folder. Folder names correspond to the report's category. The customized dialog displays report names and categories. The dialog allows users to do the following: 
+
 
 ![Custom Save As Dialog](images/save-as-dialog.png)
 
