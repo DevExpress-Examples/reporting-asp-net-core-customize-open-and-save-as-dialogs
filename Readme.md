@@ -84,7 +84,7 @@ The Open *dialog template* and the *dialog model* are defined and passed to the 
 - [Web Reporting (ASP.NET MVC, ASP.NET Core and Angular) - How to Customize the DevExpress Report Wizard Customization and Hide Data Source Actions within our Report Designer](https://github.com/DevExpress-Examples/reporting-web-wizard-customization-service)
  
 <!-- feedback -->
-## Does this example address your development requirements/objectives?
+## Does This Example Address Your Development Requirements/Objectives?
 
 [<img src="https://www.devexpress.com/support/examples/i/yes-button.svg"/>](https://www.devexpress.com/support/examples/survey.xml?utm_source=github&utm_campaign=reporting-asp-net-core-customize-open-and-save-as-dialogs&~~~was_helpful=yes) [<img src="https://www.devexpress.com/support/examples/i/no-button.svg"/>](https://www.devexpress.com/support/examples/survey.xml?utm_source=github&utm_campaign=reporting-asp-net-core-customize-open-and-save-as-dialogs&~~~was_helpful=no)
 
