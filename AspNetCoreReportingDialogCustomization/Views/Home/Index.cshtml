@@ -20,146 +20,188 @@
 </style>
 
 <script>
-    function updateCategories(url, categories, koCategory) {
-        DevExpress.Reporting.Designer.ReportStorageWeb.getUrls().done(function(result) {
-            var categoryArray = [{ key: "", items: [] }];
-            (result || []).forEach(function(reportItem) {
-                var parts = reportItem.Value.split('\\');
-                var reportName = parts.pop();
-                var categoryName = parts.length > 0 ? parts.join('\\') : "";
+    function setWidgetOption(widget, name, value) {
+        if(widget) widget.option(name, value);
+    }
 
-                var category = categoryArray.filter(function(item) { return item.key === categoryName; })[0];
+    function normalizePath(path) {
+        return (path || "").replace(/\//g, '\\');
+    }
+
+    function findCategory(categories, key) {
+        return categories.filter(function(category) { return category.key === key; })[0];
+    }
+
+    function updateCategories(onCategoriesLoaded) {
+        DevExpress.Reporting.Designer.ReportStorageWeb.getUrls().done(function(result) {
+            var categories = [{ key: "", items: [] }];
+            (result || []).forEach(function(reportItem) {
+                var parts = normalizePath(reportItem.Value).split('\\');
+                var reportName = parts.pop();
+                var categoryName = parts.join('\\');
+
+                var category = findCategory(categories, categoryName);
                 if(!category) {
                     category = { key: categoryName, items: [] };
-                    categoryArray.push(category);
+                    categories.push(category);
                 }
-                category.items.push({ text: reportItem.Key, displayName: reportName, onClick: function() { url(reportItem.Key); koCategory && koCategory(categoryName); } });
-            })
-            categories(categoryArray);
+                category.items.push({ text: reportItem.Key, displayName: reportName });
+            });
+            onCategoriesLoaded(categories);
         });
     }
 
-    function customizeSaveAsDialog(s, e) {
-        e.Popup.width("700px");
-        e.Popup.height("522px");
-        e.Popup.title = "Save";
-        var categories = ko.observableArray([]);
-        var koUrl = ko.observable("");
-        var koInput = ko.observable("");
-        var koCategory = ko.observable("");
-
-        koUrl.subscribe(function(newVal) {
-            newVal = newVal.replace('/', '\\');
-            var paths = newVal.split('\\');
-            var fileName = paths.pop();
-            koInput(fileName);
-            var catName = paths.join('\\');
-            koCategory(catName);
-        });
-        var updateReportName = function(reportName) {
-            koUrl(koCategory() ? (koCategory() + '\\' + reportName) : reportName);
-        };
-
-        koCategory.subscribe(function(newVal) {
-            newVal = newVal.replace('/', '\\');
-            updateReportName(koInput());
-        });
-        updateCategories(koUrl, categories);
-
-        var onCustomCategoryCreating = function(data) {
-            if(!data.text || data.text === "none") {
-                data.customItem = null;
-                return;
+    function createCancelButton(popup) {
+        return {
+            toolbar: 'bottom', location: 'after', widget: 'dxButton', options: {
+                text: 'Cancel', onClick: function() { popup.cancel(); }
             }
-            data.customItem = { key: data.text, items: [] };
-            categories.push(data.customItem);
-            koUrl(data.text + '\\' + koInput());
-        }
+        };
+    }
+
+    function customizeSaveAsDialog(s, e) {
+        e.Popup.width = 700;
+        e.Popup.height = 522;
+        e.Popup.title = "Save";
+
+        var categories = [];
+        var nameEditor, categoryEditor, reportList;
 
         var model = {
             categories: categories,
-            categoryName: koCategory,
-            reportUrl: koUrl,
-            onReportNameChanged: function(e) {
-                updateReportName(e.value);
-            },
-            onCustomCategoryCreating: onCustomCategoryCreating,
-            inputValue: koInput,
+            categoryName: "",
+            inputValue: "",
             categoryDisplayExpr: function(item) {
                 return item && item.key || "none";
             },
-            setUrl: function(url) {
-                koUrl(url);
+            onNameEditorInitialized: function(args) { nameEditor = args.component; },
+            onCategoryEditorInitialized: function(args) { categoryEditor = args.component; },
+            onReportListInitialized: function(args) { reportList = args.component; },
+            onReportNameChanged: function(args) {
+                setReportName(args.value);
             },
-            getUrl: function() {
-                return koUrl();
+            onCategoryChanged: function(args) {
+                model.categoryName = args.value || "";
             },
-            onShow: function(tab) {
-                koInput("");
-                updateCategories(koUrl, categories, koCategory);
+            onCustomCategoryCreating: function(args) {
+                var categoryName = normalizePath(args.text).trim();
+                if(!categoryName || categoryName === "none") {
+                    args.customItem = null;
+                    return;
+                }
+                args.customItem = findCategory(categories, categoryName);
+                if(!args.customItem) {
+                    args.customItem = { key: categoryName, items: [] };
+                    // Reload the editors after updating the shared array.
+                    categories.push(args.customItem);
+                    if(reportList) reportList.reload();
+                    if(categoryEditor) categoryEditor.getDataSource().reload();
+                }
+            },
+            onReportClick: function(args) {
+                setReportUrl(args.itemData.text);
+            },
+            setUrl: setReportUrl,
+            getUrl: getReportUrl,
+            onShow: function() {
+                setReportName("");
+                setWidgetOption(nameEditor, "value", "");
+                updateCategories(function(loadedCategories) {
+                    categories = loadedCategories;
+                    model.categories = loadedCategories;
+                    setWidgetOption(categoryEditor, "dataSource", categories);
+                    setWidgetOption(reportList, "dataSource", categories);
+                });
             },
             popupButtons: [
                 {
                     toolbar: 'bottom', location: 'after', widget: 'dxButton', options: {
-                        text: 'Save', onClick: function() {
-                            if(!koInput()) return;
-                            e.Popup.save(koUrl());
+                        text: 'Save',
+                        onClick: function() {
+                            if(!model.inputValue.trim()) return;
+                            e.Popup.save(getReportUrl());
                         }
                     }
                 },
-                {
-                    toolbar: 'bottom', location: 'after', widget: 'dxButton', options: {
-                        text: 'Cancel', onClick: function() {
-                            e.Popup.cancel();
-                        }
-                    }
-                }
+                createCancelButton(e.Popup)
             ]
+        };
+
+        function getReportUrl() {
+            var reportName = model.inputValue.trim();
+            return model.categoryName ? model.categoryName + '\\' + reportName : reportName;
         }
+
+        function setReportName(reportName) {
+            model.inputValue = reportName || "";
+        }
+
+        function setReportUrl(url) {
+            var parts = normalizePath(url).split('\\');
+            setReportName(parts.pop());
+            model.categoryName = parts.join('\\');
+            setWidgetOption(nameEditor, "value", model.inputValue);
+            setWidgetOption(categoryEditor, "value", model.categoryName);
+        }
+
         e.Customize("custom-save-as-dialog", model);
     }
 
     function customizeOpenDialog(s, e) {
-        e.Popup.width("700px");
-        e.Popup.height("476px");
+        e.Popup.width = 700;
+        e.Popup.height = 476;
         e.Popup.title = "Open";
-        var categories = ko.observableArray([]);
-        var koUrl = ko.observable("");
-        var koInput = ko.observable("");
-        updateCategories(koUrl, categories);
+
+        var searchEditor, reportList;
 
         var model = {
-            categories: categories,
-            reportUrl: koUrl,
-            inputValue: koInput,
-            setUrl: function(url) {
-                koUrl(url);
+            categories: [],
+            reportUrl: "",
+            inputValue: "",
+            onSearchEditorInitialized: function(args) { searchEditor = args.component; },
+            onReportListInitialized: function(args) { reportList = args.component; },
+            onSearchValueChanged: function(args) {
+                setSearchText(args.value);
             },
+            onReportClick: function(args) {
+                selectReport(args.itemData.text);
+            },
+            setUrl: selectReport,
             getUrl: function() {
-                return koUrl();
+                return model.reportUrl;
             },
-            onShow: function(tab) {
-                koInput("");
-                updateCategories(koUrl, categories);
+            onShow: function() {
+                setWidgetOption(searchEditor, "value", "");
+                setSearchText("");
+                updateCategories(function(loadedCategories) {
+                    model.categories = loadedCategories;
+                    setWidgetOption(reportList, "dataSource", loadedCategories);
+                });
             },
             popupButtons: [
                 {
                     toolbar: 'bottom', location: 'after', widget: 'dxButton', options: {
-                        text: 'Open', onClick: function() {
-                            e.Popup.open(koUrl());
+                        text: 'Open',
+                        onClick: function() {
+                            if(!model.reportUrl) return;
+                            e.Popup.open(model.reportUrl);
                         }
                     }
                 },
-                {
-                    toolbar: 'bottom', location: 'after', widget: 'dxButton', options: {
-                        text: 'Cancel', onClick: function() {
-                            e.Popup.cancel();
-                        }
-                    }
-                }
+                createCancelButton(e.Popup)
             ]
+        };
+
+        function selectReport(url) {
+            model.reportUrl = url || "";
         }
-        e.Customize("custom-open-dialog", model)
+
+        function setSearchText(text) {
+            model.inputValue = text || "";
+            setWidgetOption(reportList, "searchValue", model.inputValue);
+        }
+
+        e.Customize("custom-open-dialog", model);
     }
 </script>
 <style>
@@ -174,8 +216,9 @@
              data-bind="dxTextBox: {
                  height: 36,
                  value: inputValue,
-                 valueChangeEvent: 'keyup',
+                 valueChangeEvent: 'input',
                  onValueChanged: onReportNameChanged,
+                 onInitialized: onNameEditorInitialized,
                  placeholder: 'Enter a report name to save...',
                  showClearButton: true
         }"></div>
@@ -184,6 +227,8 @@
                 height: 36,
                 dataSource: categories,
                 value: categoryName,
+                onValueChanged: onCategoryChanged,
+                onInitialized: onCategoryEditorInitialized,
                 valueExpr: 'key',
                 displayExpr: categoryDisplayExpr,
                 acceptCustomValue: true,
@@ -195,16 +240,27 @@
                 dataSource: categories,
                 height: '260px',
                 grouped: true,
+                onInitialized: onReportListInitialized,
+                onItemClick: onReportClick,
                 displayExpr: 'displayName',
                 keyExpr: 'text',
-                collapsibleGroups: true,
+                collapsibleGroups: true
         }"></div>
     </div>
 </script>
 
 <script type="text/html" id="custom-open-dialog">
     <div class="dxrd-reportdialog-content">
-        <div style="margin-bottom: 10px;" data-bind="dxTextBox: { height: 36, value: inputValue, valueChangeEvent: 'keyup', placeholder: 'Enter text to search...', showClearButton: true }"></div>
+        <div style="margin-bottom: 10px;"
+             data-bind="dxTextBox: {
+                height: 36,
+                value: inputValue,
+                valueChangeEvent: 'input',
+                onValueChanged: onSearchValueChanged,
+                onInitialized: onSearchEditorInitialized,
+                placeholder: 'Enter text to search...',
+                showClearButton: true
+        }"></div>
         <div class="dx-default-border-style dxd-border-secondary"
              data-bind="dxList: {
                 dataSource: categories,
@@ -212,9 +268,11 @@
                 grouped: true,
                 searchExpr: 'text',
                 searchValue: inputValue,
+                onInitialized: onReportListInitialized,
+                onItemClick: onReportClick,
                 displayExpr: 'displayName',
                 keyExpr: 'text',
-                collapsibleGroups: true,
+                collapsibleGroups: true
         }"></div>
     </div>
 </script>
@@ -226,4 +284,4 @@
          .ClientSideEvents(configure => {
              configure.CustomizeSaveAsDialog("customizeSaveAsDialog");
              configure.CustomizeOpenDialog("customizeOpenDialog");
-         }));
+         }))

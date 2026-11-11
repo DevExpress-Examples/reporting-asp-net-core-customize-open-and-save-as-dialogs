@@ -1,24 +1,46 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using AspNetCoreReportingDialogCustomization.Services;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using DevExpress.AspNetCore;
+using DevExpress.AspNetCore.Reporting;
+using DevExpress.XtraReports.Web.Extensions;
 
-namespace AspNetCoreReportingDialogCustomization
-{
-    public class Program
-    {
-        public static void Main(string[] args) {
-            CreateWebHostBuilder(args).Build().Run();
-        }
+var builder = WebApplication.CreateBuilder(args);
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) {
-            return WebHost.CreateDefaultBuilder(args)
-                .UseStartup<Startup>();
-        }
-    }
+builder.Services.AddDevExpressControls();
+builder.Services.AddScoped<ReportStorageWebExtension, CustomReportStorageWebExtension>();
+builder.Services
+    .AddControllersWithViews()
+    .AddNewtonsoftJson();
+builder.Services.ConfigureReportingServices(configurator => {
+    configurator.ConfigureReportDesigner(designerConfigurator => {
+        designerConfigurator.RegisterDataSourceWizardConfigFileConnectionStringsProvider();
+    });
+    configurator.ConfigureWebDocumentViewer(viewerConfigurator => {
+        viewerConfigurator.UseCachedReportSourceBuilder();
+    });
+});
+
+var app = builder.Build();
+
+DevExpress.XtraReports.Configuration.Settings.Default.UserDesignerOptions.DataBindingMode =
+    DevExpress.XtraReports.UI.DataBindingMode.Expressions;
+app.UseDevExpressControls();
+
+if(app.Environment.IsDevelopment()) {
+    app.UseDeveloperExceptionPage();
+} else {
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
 }
+
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+app.UseAuthorization();
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.Run();
