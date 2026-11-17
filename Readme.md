@@ -12,7 +12,7 @@ This example customizes the Web Report Designer's **Save As** and **Open** dialo
 
 ### Save As
 
-Open the Report Designer menu and select **Save As**. Enter a report name and select a category from the dropdown, or enter a new category name. Select **none** to save without a category. To overwrite an existing report, click its row to fill in its name and category, and click **Save**.
+Open the Report Designer menu and select **Save As**. Enter a report name and select a category from the drop-down list, or enter a new category name. Select **none** to save without a category. To overwrite an existing report, click the report row to fill in the report name and category, and click **Save**.
 
 ![Custom Save As Dialog](images/save-as-dialog.png)
 
