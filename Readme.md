@@ -4,7 +4,7 @@
 [![](https://img.shields.io/badge/📖_How_to_use_DevExpress_Examples-e9f6fc?style=flat-square)](https://docs.devexpress.com/GeneralInformation/403183)
 [![](https://img.shields.io/badge/💬_Leave_Feedback-feecdd?style=flat-square)](#does-this-example-address-your-development-requirementsobjectives)
 <!-- default badges end -->
-# ASP.NET Core Reporting - Customize the Save As and Open Dialogs in the Web Report Designer
+# ASP.NET Core Reports - Customize the Save As and Open Dialogs in the Web Report Designer
 
 This example customizes the Web Report Designer's **Save As** and **Open** dialogs to organize reports into categories. Users can save reports in existing or new categories and search for reports in a grouped list.
 
@@ -12,40 +12,40 @@ This example customizes the Web Report Designer's **Save As** and **Open** dialo
 
 ### Save As
 
-Open the Report Designer menu and select **Save As**. Enter a report name and select a category from the drop-down list, or enter a new category name. Select **none** to save without a category. To overwrite an existing report, click the report row to fill in the report name and category, and click **Save**.
+Open the Report Designer menu and select **Save As**. Enter a report name and select a category from the drop-down list, or enter a new category name. Select **none** to save the report without a category. To overwrite an existing report, click the report row to fill in the report name and category and save the report.
 
 ![Custom Save As Dialog](images/save-as-dialog.png)
 
 ### Open
 
-Open the Report Designer menu and select **Open**. Enter text to filter report paths, click a report row, and click **Open**.
+Open the Report Designer menu and select **Open**. Enter text to filter report paths, click a report row, and choose **Open**.
 
-Category headers only expand or collapse groups.
+Click a category header to expand or collapse the list of reports in that category.
 
 ![Custom Open Dialog](images/open-dialog.png)
 
 ## Implementation Details
 
-### 1. Register Report Storage
+### Register Report Storage
 
-Register the custom [`ReportStorageWebExtension`](https://docs.devexpress.com/XtraReports/DevExpress.XtraReports.Web.Extensions.ReportStorageWebExtension) in [`Program.cs`](AspNetCoreReportingDialogCustomization/Program.cs):
+Register the custom [`ReportStorageWebExtension`](https://docs.devexpress.com/XtraReports/DevExpress.XtraReports.Web.Extensions.ReportStorageWebExtension) in [Program.cs](AspNetCoreReportingDialogCustomization/Program.cs):
 
 ```csharp
 builder.Services.AddScoped<ReportStorageWebExtension, CustomReportStorageWebExtension>();
 ```
 
-[`CustomReportStorageWebExtension.cs`](AspNetCoreReportingDialogCustomization/Services/CustomReportStorageWebExtension.cs) implements the storage operations:
+[CustomReportStorageWebExtension.cs](AspNetCoreReportingDialogCustomization/Services/CustomReportStorageWebExtension.cs) implements the storage operations:
 
-- `GetUrls` returns report paths from the `Reports` folder and predefined reports from [`ReportsFactory.cs`](AspNetCoreReportingDialogCustomization/PredefinedReports/ReportsFactory.cs).
+- `GetUrls` returns report paths from the `Reports` folder and predefined reports from [ReportsFactory.cs](AspNetCoreReportingDialogCustomization/PredefinedReports/ReportsFactory.cs).
 - `GetData` loads a report layout.
 - `SetData` saves a layout and creates a category folder when needed.
 - `SetNewData` delegates to `SetData` and returns the saved report URL.
 
-Each folder in the `Reports` folder is a report category. The folder name is the category name.
+Each folder in the `Reports` folder is a report category. The folder name is a category name.
 
-### 2. Handle Dialog Customization Events
+### Handle Dialog Customization Events
 
-Assign handlers to [`CustomizeSaveAsDialog`](https://docs.devexpress.com/XtraReports/DevExpress.AspNetCore.Reporting.ReportDesigner.ReportDesignerClientSideEventsBuilder.CustomizeSaveAsDialog(System.String)) and [`CustomizeOpenDialog`](https://docs.devexpress.com/XtraReports/DevExpress.AspNetCore.Reporting.ReportDesigner.ReportDesignerClientSideEventsBuilder.CustomizeOpenDialog(System.String)) in [`Index.cshtml`](AspNetCoreReportingDialogCustomization/Views/Home/Index.cshtml):
+Assign handlers to [`CustomizeSaveAsDialog`](https://docs.devexpress.com/XtraReports/DevExpress.AspNetCore.Reporting.ReportDesigner.ReportDesignerClientSideEventsBuilder.CustomizeSaveAsDialog(System.String)) and [`CustomizeOpenDialog`](https://docs.devexpress.com/XtraReports/DevExpress.AspNetCore.Reporting.ReportDesigner.ReportDesignerClientSideEventsBuilder.CustomizeOpenDialog(System.String)) in [Index.cshtml](AspNetCoreReportingDialogCustomization/Views/Home/Index.cshtml):
 
 ```cshtml
 @(Html.DevExpress().ReportDesigner("reportDesigner")
@@ -68,17 +68,17 @@ e.Popup.title = "Open";
 e.Customize("custom-open-dialog", model);
 ```
 
-See [`Index.cshtml`](AspNetCoreReportingDialogCustomization/Views/Home/Index.cshtml) for the complete handlers and models.
+Review the following file for the complete implementation of handlers and models: [Index.cshtml](AspNetCoreReportingDialogCustomization/Views/Home/Index.cshtml).
 
-### 3. Define Templates and Load Categories
+### Define Templates and Load Categories
 
-The HTML templates in [`Index.cshtml`](AspNetCoreReportingDialogCustomization/Views/Home/Index.cshtml) contain DevExtreme editors:
+HTML templates in [Index.cshtml](AspNetCoreReportingDialogCustomization/Views/Home/Index.cshtml) configure DevExtreme editors to do the following:
 
-- [`dxTextBox`](https://js.devexpress.com/Documentation/ApiReference/UI_Components/dxTextBox/) accepts a report name or search text.
-- [`dxSelectBox`](https://js.devexpress.com/Documentation/ApiReference/UI_Components/dxSelectBox/) selects or creates sa category in the Save As dialog.
-- [`dxList`](https://js.devexpress.com/Documentation/ApiReference/UI_Components/dxList/) displays reports grouped by category.
+- Accept a report name or search text ([dxTextBox](https://js.devexpress.com/Documentation/ApiReference/UI_Components/dxTextBox/)).
+- Select or create a category in the Save As dialog ([dxSelectBox](https://js.devexpress.com/Documentation/ApiReference/UI_Components/dxSelectBox/)).
+- Display reports grouped by category ([dxList](https://js.devexpress.com/Documentation/ApiReference/UI_Components/dxList/)).
 
-The `updateCategories` function calls the client-side [`ReportStorageWeb.getUrls`](https://docs.devexpress.com/XtraReports/js-ASPxClientReportDesigner?p=netframework#js_aspxclientreportdesigner_reportstoragegeturls) method. This method gets report URLs from the server-side [`ReportStorageWebExtension.GetUrls`](https://docs.devexpress.com/XtraReports/DevExpress.XtraReports.Web.Extensions.ReportStorageWebExtension.GetUrls) method. The function then transforms the returned paths into the grouped array expected by `dxList`:
+The `updateCategories` function calls the client-side [ReportStorageWeb.getUrls](https://docs.devexpress.com/XtraReports/js-ASPxClientReportDesigner?p=netframework#js_aspxclientreportdesigner_reportstoragegeturls) method. This method gets report URLs from the server-side [`ReportStorageWebExtension.GetUrls`](https://docs.devexpress.com/XtraReports/DevExpress.XtraReports.Web.Extensions.ReportStorageWebExtension.GetUrls) method. The function then transforms returned paths into the grouped array (as expected by `dxList`):
 
 ```javascript
 [
@@ -98,7 +98,7 @@ The group with an empty `key` contains reports without a category, including pre
 
 The dialog models use ordinary JavaScript properties, not Knockout observables. The templates retain `data-bind` attributes for internal rendering. Editor event handlers synchronize model values, and widget `option` calls refresh report lists and category choices.
 
-### 4. Connect Dialog Actions
+### Connect Dialog Actions
 
 Each model implements `setUrl`, `getUrl`, and `onShow`. The `onShow` function resets dialog state and reloads categories when the dialog opens.
 
